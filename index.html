@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Сапёр</title>
+  <title>💣 Сапёр</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     body {
@@ -51,18 +51,9 @@
     }
 
     @keyframes explosion {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 rgba(255, 0, 0, 0);
-      }
-      50% {
-        transform: scale(1.2);
-        box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 rgba(255, 0, 0, 0);
-      }
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 0, 0, 0); }
+      50% { transform: scale(1.2); box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 0, 0, 0); }
     }
 
     button {
@@ -99,22 +90,13 @@
 
 <h1>💣 Сапёр</h1>
 
-<!-- Звуки -->
-<audio id="sound-button">
-  <source src="sounds/button.mp3" type="audio/mp3" />
-</audio>
-<audio id="sound-click">
-  <source src="sounds/click.mp3" type="audio/mp3" />
-</audio>
-<audio id="sound-win">
-  <source src="sounds/win.mp3" type="audio/mp3" />
-</audio>
-<audio id="sound-lose">
-  <source src="sounds/lose.mp3" type="audio/mp3" />
-</audio>
-<audio id="sound-auto-reveal">
-  <source src="sounds/auto-reveal.mp3" type="audio/mp3" />
-</audio>
+<!-- Аудио -->
+<audio id="sound-button"><source src="sounds/button.mp3" type="audio/mp3" /></audio>
+<audio id="sound-click"><source src="sounds/click.mp3" type="audio/mp3" /></audio>
+<audio id="sound-win"><source src="sounds/win.mp3" type="audio/mp3" /></audio>
+<audio id="sound-lose"><source src="sounds/lose.mp3" type="audio/mp3" /></audio>
+<audio id="sound-auto-reveal"><source src="sounds/auto-reveal.mp3" type="audio/mp3" /></audio>
+<audio id="background-music" loop><source src="sounds/background.mp3" type="audio/mp3" /></audio>
 
 <div id="game"></div>
 

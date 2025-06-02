@@ -65,8 +65,6 @@ function vibrate(pattern = [100]) {
     } catch (e) {
       console.warn("Ошибка вибрации:", e);
     }
-  } else {
-    console.log("Вибрация не поддерживается");
   }
 }
 
@@ -118,7 +116,7 @@ function startGame(level = 'normal') {
       playSound("lose");
       vibrate([300]);
       revealAll(board);
-      endGame(false, startTime); // Проиграл
+      endGame(false, startTime);
       return;
     }
 
@@ -127,6 +125,7 @@ function startGame(level = 'normal') {
       cell.classList.add("empty-cell");
       playSound("auto");
       vibrate([30]);
+
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           const nx = x + dx;
@@ -152,7 +151,7 @@ function startGame(level = 'normal') {
     if (revealedCells === totalSafeCells) {
       playSound("win");
       vibrate([200, 100, 200]);
-      endGame(true, startTime); // Победа
+      endGame(true, startTime);
     }
   }
 
@@ -188,9 +187,14 @@ function startGame(level = 'normal') {
   // Результат
   const resultBox = document.getElementById("result-box");
   if (resultBox) resultBox.remove();
+
+  // Первое взаимодействие — запуск музыки
+  document.body.addEventListener("click", () => {
+    playSound("background");
+  }, { once: true });
 }
 
-// ==== Открытие всех мин ====
+// ==== Раскрытие всех мин ====
 function revealAll(board) {
   const gameDiv = document.getElementById("game");
   const table = gameDiv.querySelector("table");
@@ -246,9 +250,9 @@ function calculatePoints(level, won, time) {
 
 // ==== Достижения ====
 function checkAchievements(won, time) {
-  const key = `sapper_${currentLevel}_best_time`;
+  const key = `best_time_${currentLevel}`;
   const bestTime = localStorage.getItem(key);
-  const newBest = !bestTime || time < parseInt(bestTime);
+  const newBest = won && (!bestTime || time < parseInt(bestTime));
 
   if (newBest) {
     localStorage.setItem(key, time);
@@ -266,6 +270,10 @@ function checkAchievements(won, time) {
 
   if (gamesPlayed === 10) {
     achievements.push("Вы сыграли 10 игр!");
+  }
+
+  if (currentLevel === "hard" && won) {
+    achievements.push("Пройден уровень HARD!");
   }
 
   if (newBest) {
@@ -286,8 +294,10 @@ function sendResultToBot(won, points, time, achievements) {
         time: time,
         points: points,
         achievements: achievements,
-        gamesPlayed: parseInt(localStorage.getItem("sapper_games_played")) || 0,
-        bestTime: localStorage.getItem(`sapper_${currentLevel}_best_time`),
+        games_played: localStorage.getItem("sapper_games_played"),
+        best_time_easy: localStorage.getItem("sapper_easy_best_time"),
+        best_time_normal: localStorage.getItem("sapper_normal_best_time"),
+        best_time_hard: localStorage.getItem("sapper_hard_best_time"),
       })
     );
   }
@@ -318,4 +328,4 @@ function nextLevel() {
   return levels[index + 1] || currentLevel;
 }
 
-startGame();
+window.onload = () => startGame();
