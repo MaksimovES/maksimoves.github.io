@@ -66,11 +66,10 @@ function vibrate(pattern = [100]) {
       console.warn("Ошибка вибрации:", e);
     }
   } else {
-    console.log("Вибрация не поддерживается на этом устройстве");
+    console.log("Вибрация не поддерживается");
   }
 }
 
-// ==== Первое взаимодействие для разрешения вибрации ====
 document.body.addEventListener("click", () => {
   vibrate([50]);
 }, { once: true });
@@ -249,7 +248,7 @@ function calculatePoints(level, won, time) {
 function checkAchievements(won, time) {
   const key = `sapper_${currentLevel}_best_time`;
   const bestTime = localStorage.getItem(key);
-  const newBest = !bestTime || time < bestTime;
+  const newBest = !bestTime || time < parseInt(bestTime);
 
   if (newBest) {
     localStorage.setItem(key, time);
@@ -319,4 +318,4 @@ function nextLevel() {
   return levels[index + 1] || currentLevel;
 }
 
-window.onload = () => startGame();
+startGame();
