@@ -1,8 +1,26 @@
-let currentLevel = 'normal';
+let currentLevel = "normal";
 let gameInProgress = true;
 
+document.body.addEventListener("click", () => {}, { once: true });
+
+function playSound(type) {
+  const sounds = {
+    button: document.getElementById("sound-button"),
+    click: document.getElementById("sound-click"),
+    win: document.getElementById("sound-win"),
+    lose: document.getElementById("sound-lose"),
+  };
+
+  if (sounds[type]) {
+    sounds[type].currentTime = 0;
+    sounds[type].play().catch(() => {});
+  }
+}
+
 function createMinesweeperBoard(width, height, mineCount) {
-  const board = Array(height).fill(null).map(() => Array(width).fill(0));
+  const board = Array(height)
+    .fill(null)
+    .map(() => Array(width).fill(0));
   let placed = 0;
 
   while (placed < mineCount) {
@@ -40,22 +58,22 @@ function createMinesweeperBoard(width, height, mineCount) {
   return board;
 }
 
-function startGame(level = 'normal') {
+function startGame(level = "normal") {
   gameInProgress = true;
   currentLevel = level;
 
   let width, height, mines;
 
   switch (level) {
-    case 'easy':
+    case "easy":
       width = height = 5;
       mines = 5;
       break;
-    case 'normal':
+    case "normal":
       width = height = 9;
       mines = 10;
       break;
-    case 'hard':
+    case "hard":
       width = height = 16;
       mines = 40;
       break;
@@ -78,7 +96,8 @@ function startGame(level = 'normal') {
 
     if (value === "X") {
       cell.textContent = "💣";
-      cell.classList.add("mine-cell");
+      cell.classList.add("mine-cell", "explode");
+      playSound("lose");
       cell.classList.add("explode");
       revealAll(board);
       endGame(false); // Проиграл
@@ -93,15 +112,30 @@ function startGame(level = 'normal') {
         for (let dx = -1; dx <= 1; dx++) {
           const nx = x + dx;
           const ny = y + dy;
-          if (ny >= 0 && ny < height && nx >= 0 && nx < width && !(dx === 0 && dy === 0)) {
+          if (
+            ny >= 0 &&
+            ny < height &&
+            nx >= 0 &&
+            nx < width &&
+            !(dx === 0 && dy === 0)
+          ) {
             revealCell(nx, ny);
           }
         }
       }
     }
 
+    if (value === 0) {
+      cell.classList.add("empty-cell");
+      playSound("click");
+    } else {
+      cell.classList.add("safe-cell");
+      playSound("click");
+    }
+
     revealedCells++;
     if (revealedCells === totalSafeCells) {
+      playSound("win");
       endGame(true); // Выиграл
     }
   }
@@ -124,16 +158,23 @@ function startGame(level = 'normal') {
   gameDiv.appendChild(table);
 
   // Кнопки уровней
-  const levelButtons = document.getElementById("level-buttons") || document.createElement("div");
-  levelButtons.id = "level-buttons";
   levelButtons.innerHTML = `
-    <button onclick="startGame('easy')">Easy</button>
-    <button onclick="startGame('normal')" class="${level === 'normal' ? 'active' : ''}">Normal</button>
-    <button onclick="startGame('hard')">Hard</button>
-  `;
+  <button onclick="handleLevelClick('easy')">Easy</button>
+  <button onclick="handleLevelClick('normal')" class="${
+    level === "normal" ? "active" : ""
+  }">Normal</button>
+  <button onclick="handleLevelClick('hard')">Hard</button>
+`;
+
   if (!document.getElementById("level-buttons")) {
     gameDiv.before(levelButtons);
   }
+
+  // Функция для обработки клика по уровням
+  window.handleLevelClick = (level) => {
+    playSound("button");
+    startGame(level);
+  };
 
   // Блокируем повторный запуск
   const resultBox = document.getElementById("result-box");
@@ -158,15 +199,30 @@ function revealAll(board) {
 function endGame(won) {
   gameInProgress = false;
 
-  const resultBox = document.getElementById("result-box") || document.createElement("div");
+  const resultBox =
+    document.getElementById("result-box") || document.createElement("div");
   resultBox.id = "result-box";
   resultBox.style.marginTop = "20px";
 
   resultBox.innerHTML = `
-    <p><strong>${won ? "🎉 Победа!" : "💥 Вы проиграли!"}</strong></p>
-    <button onclick="startGame(currentLevel)">🔄 Заново</button>
-    ${won && currentLevel !== 'hard' ? `<button onclick="startGame(nextLevel())">➡️ Следующий уровень</button>` : ""}
-  `;
+  <p><strong>${won ? "🎉 Победа!" : "💥 Вы проиграли!"}</strong></p>
+  <button onclick="restartGame()">🔄 Заново</button>
+  ${
+    won && currentLevel !== "hard"
+      ? `<button onclick="nextLevelGame()">➡️ Следующий уровень</button>`
+      : ""
+  }
+`;
+
+  window.restartGame = () => {
+    playSound("button");
+    startGame(currentLevel);
+  };
+
+  window.nextLevelGame = () => {
+    playSound("button");
+    startGame(nextLevel());
+  };
 
   const existingBox = document.getElementById("result-box");
   if (existingBox) {
