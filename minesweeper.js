@@ -63,7 +63,13 @@ function playSound(type) {
 // ==== Вибрация ====
 function vibrate(pattern = [100]) {
   if ("vibrate" in navigator) {
-    navigator.vibrate(pattern);
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      console.warn("Ошибка вибрации:", e);
+    }
+  } else {
+    console.log("Вибрация не поддерживается на этом устройстве");
   }
 }
 
