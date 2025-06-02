@@ -1,6 +1,10 @@
 let currentLevel = 'normal';
 let gameInProgress = true;
 
+document.body.addEventListener("click", () => {
+  vibrate([50]); // Первый тестовый сигнал
+}, { once: true });
+
 function createMinesweeperBoard(width, height, mineCount) {
   const board = Array(height).fill(null).map(() => Array(width).fill(0));
   let placed = 0;
