@@ -1,10 +1,6 @@
 let currentLevel = 'normal';
 let gameInProgress = true;
 
-document.body.addEventListener("click", () => {
-  vibrate([50]); // Первый тестовый сигнал
-}, { once: true });
-
 function createMinesweeperBoard(width, height, mineCount) {
   const board = Array(height).fill(null).map(() => Array(width).fill(0));
   let placed = 0;
@@ -52,6 +48,7 @@ function playSound(type) {
     win: document.getElementById("sound-win"),
     lose: document.getElementById("sound-lose"),
     auto: document.getElementById("sound-auto-reveal"),
+    background: document.getElementById("background-music"),
   };
 
   if (sounds[type]) {
@@ -72,6 +69,11 @@ function vibrate(pattern = [100]) {
     console.log("Вибрация не поддерживается на этом устройстве");
   }
 }
+
+// ==== Первое взаимодействие для разрешения вибрации ====
+document.body.addEventListener("click", () => {
+  vibrate([50]);
+}, { once: true });
 
 // ==== Начало игры ====
 function startGame(level = 'normal') {
@@ -101,6 +103,7 @@ function startGame(level = 'normal') {
 
   let revealedCells = 0;
   const totalSafeCells = width * height - mines;
+  const startTime = Date.now();
 
   function revealCell(x, y) {
     const cell = table.rows[y]?.cells[x];
@@ -116,7 +119,7 @@ function startGame(level = 'normal') {
       playSound("lose");
       vibrate([300]);
       revealAll(board);
-      endGame(false); // Проиграл
+      endGame(false, startTime); // Проиграл
       return;
     }
 
@@ -124,8 +127,7 @@ function startGame(level = 'normal') {
     if (value === 0) {
       cell.classList.add("empty-cell");
       playSound("auto");
-      vibrate([50]);
-
+      vibrate([30]);
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           const nx = x + dx;
@@ -151,7 +153,7 @@ function startGame(level = 'normal') {
     if (revealedCells === totalSafeCells) {
       playSound("win");
       vibrate([200, 100, 200]);
-      endGame(true); // Победа
+      endGame(true, startTime); // Победа
     }
   }
 
@@ -187,10 +189,6 @@ function startGame(level = 'normal') {
   // Результат
   const resultBox = document.getElementById("result-box");
   if (resultBox) resultBox.remove();
-
-  // Первый клик — запуск фоновой музыки
-  document.body.addEventListener("click", () => {
-  }, { once: true });
 }
 
 // ==== Открытие всех мин ====
@@ -210,8 +208,12 @@ function revealAll(board) {
 }
 
 // ==== Конец игры ====
-function endGame(won) {
+function endGame(won, startTime) {
   gameInProgress = false;
+
+  const timeElapsed = Math.round((Date.now() - startTime) / 1000);
+  const points = calculatePoints(currentLevel, won, timeElapsed);
+  const achievements = checkAchievements(won, timeElapsed);
 
   const resultBox = document.getElementById("result-box") || document.createElement("div");
   resultBox.id = "result-box";
@@ -219,6 +221,9 @@ function endGame(won) {
 
   resultBox.innerHTML = `
     <p><strong>${won ? "🎉 Победа!" : "💥 Вы проиграли!"}</strong></p>
+    <p>⏱ Время: ${timeElapsed} сек</p>
+    <p>🏆 Очков: ${points}</p>
+    ${achievements.map(a => `<div>🌟 ${a}</div>`).join("")}
     <button onclick="restartGame()">🔄 Заново</button>
     ${won && currentLevel !== 'hard' ? `<button onclick="nextLevelGame()">➡️ Следующий уровень</button>` : ""}
   `;
@@ -228,6 +233,64 @@ function endGame(won) {
     existingBox.replaceWith(resultBox);
   } else {
     document.getElementById("game").after(resultBox);
+  }
+
+  sendResultToBot(won, points, timeElapsed, achievements);
+}
+
+// ==== Подсчёт очков ====
+function calculatePoints(level, won, time) {
+  const base = { easy: 10, normal: 30, hard: 50 };
+  const bonusTime = Math.max(0, 100 - time);
+  return won ? base[level] + bonusTime : 0;
+}
+
+// ==== Достижения ====
+function checkAchievements(won, time) {
+  const key = `sapper_${currentLevel}_best_time`;
+  const bestTime = localStorage.getItem(key);
+  const newBest = !bestTime || time < bestTime;
+
+  if (newBest) {
+    localStorage.setItem(key, time);
+  }
+
+  let gamesPlayed = parseInt(localStorage.getItem("sapper_games_played")) || 0;
+  gamesPlayed++;
+  localStorage.setItem("sapper_games_played", gamesPlayed);
+
+  let achievements = [];
+
+  if (gamesPlayed === 1) {
+    achievements.push("Первая игра!");
+  }
+
+  if (gamesPlayed === 10) {
+    achievements.push("Вы сыграли 10 игр!");
+  }
+
+  if (newBest) {
+    achievements.push(`Новый рекорд на уровне ${currentLevel.toUpperCase()} — ${time} сек`);
+  }
+
+  return achievements;
+}
+
+// ==== Отправка результата в бота ====
+function sendResultToBot(won, points, time, achievements) {
+  if (typeof Telegram !== "undefined" && Telegram.WebApp) {
+    Telegram.WebApp.sendData(
+      JSON.stringify({
+        action: "game_result",
+        result: won ? "win" : "lose",
+        level: currentLevel,
+        time: time,
+        points: points,
+        achievements: achievements,
+        gamesPlayed: parseInt(localStorage.getItem("sapper_games_played")) || 0,
+        bestTime: localStorage.getItem(`sapper_${currentLevel}_best_time`),
+      })
+    );
   }
 }
 
@@ -250,12 +313,10 @@ window.nextLevelGame = () => {
   startGame(nextLevel());
 };
 
-// ==== Следующий уровень ====
 function nextLevel() {
   const levels = ['easy', 'normal', 'hard'];
   const index = levels.indexOf(currentLevel);
   return levels[index + 1] || currentLevel;
 }
 
-// ==== Запуск игры ====
-startGame();
+window.onload = () => startGame();
