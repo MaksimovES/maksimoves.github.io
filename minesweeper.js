@@ -1,7 +1,5 @@
 let currentLevel = 'normal';
 let gameInProgress = true;
-let timerInterval = null;
-let timeElapsed = 0;
 
 function createMinesweeperBoard(width, height, mineCount) {
   const board = Array(height).fill(null).map(() => Array(width).fill(0));
@@ -45,16 +43,6 @@ function createMinesweeperBoard(width, height, mineCount) {
 function startGame(level = 'normal') {
   gameInProgress = true;
   currentLevel = level;
-  timeElapsed = 0;
-
-  const timerDisplay = document.getElementById("timer");
-  timerDisplay.textContent = "Время: 0 сек";
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeElapsed++;
-    timerDisplay.textContent = `⏱ Время: ${timeElapsed} сек`;
-  }, 1000);
 
   let width, height, mines;
 
@@ -80,35 +68,53 @@ function startGame(level = 'normal') {
   let revealedCells = 0;
   const totalSafeCells = width * height - mines;
 
+  function revealCell(x, y) {
+    const cell = table.rows[y]?.cells[x];
+    const value = board[y][x];
+
+    if (!cell || cell.classList.contains("revealed")) return;
+
+    cell.classList.add("revealed");
+
+    if (value === "X") {
+      cell.textContent = "💣";
+      cell.classList.add("mine-cell");
+      cell.classList.add("explode");
+      revealAll(board);
+      endGame(false); // Проиграл
+      return;
+    }
+
+    cell.textContent = value || "";
+    cell.classList.add(value === 0 ? "empty-cell" : "safe-cell");
+
+    if (value === 0) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (ny >= 0 && ny < height && nx >= 0 && nx < width && !(dx === 0 && dy === 0)) {
+            revealCell(nx, ny);
+          }
+        }
+      }
+    }
+
+    revealedCells++;
+    if (revealedCells === totalSafeCells) {
+      endGame(true); // Выиграл
+    }
+  }
+
   board.forEach((row, y) => {
     const tr = document.createElement("tr");
     row.forEach((cell, x) => {
       const td = document.createElement("td");
       td.dataset.value = cell === "X" ? "mine" : cell || "";
-      td.textContent = "";
-
       td.onclick = () => {
-        if (!gameInProgress) return;
-
-        // Анимация клика
-        td.classList.add("reveal");
-        td.textContent = cell === "X" ? "💣" : cell || "";
-        td.classList.add(cell === "X" ? "mine-cell" : "safe-cell");
-
-        if (cell === "X") {
-          revealAll(board);
-          endGame(false); // Проиграл
-        } else {
-          revealedCells++;
-          playSound("click");
-          if (revealedCells === totalSafeCells) {
-            endGame(true); // Выиграл
-          }
-        }
-
-        td.onclick = null;
+        if (!gameInProgress || td.classList.contains("revealed")) return;
+        revealCell(x, y);
       };
-
       tr.appendChild(td);
     });
     table.appendChild(tr);
@@ -127,16 +133,6 @@ function startGame(level = 'normal') {
   `;
   if (!document.getElementById("level-buttons")) {
     gameDiv.before(levelButtons);
-  }
-
-  // Таймер
-  const timer = document.getElementById("timer") || document.createElement("div");
-  timer.id = "timer";
-  timer.style.margin = "10px auto";
-  timer.style.fontSize = "18px";
-  timer.textContent = "⏱ Время: 0 сек";
-  if (!document.getElementById("timer")) {
-    levelButtons.after(timer);
   }
 
   // Блокируем повторный запуск
@@ -159,39 +155,15 @@ function revealAll(board) {
   }
 }
 
-function calculatePoints(level, won, time) {
-  const base = { easy: 10, normal: 30, hard: 50 };
-  const bonusTime = Math.max(0, 100 - time); // бонус за скорость
-  return won ? base[level] + bonusTime : 0;
-}
-
-function nextLevel() {
-  const levels = ['easy', 'normal', 'hard'];
-  const index = levels.indexOf(currentLevel);
-  return levels[index + 1] || currentLevel;
-}
-
 function endGame(won) {
   gameInProgress = false;
-  clearInterval(timerInterval);
-
-  const points = calculatePoints(currentLevel, won, timeElapsed);
-  const achievements = checkAchievements(won, timeElapsed);
 
   const resultBox = document.getElementById("result-box") || document.createElement("div");
   resultBox.id = "result-box";
   resultBox.style.marginTop = "20px";
-  resultBox.style.padding = "15px";
-  resultBox.style.backgroundColor = won ? "#ccffcc" : "#ffe0e0";
-  resultBox.style.borderRadius = "10px";
-
-  const achievementText = achievements.map(a => `<div>🌟 ${a}</div>`).join("");
 
   resultBox.innerHTML = `
     <p><strong>${won ? "🎉 Победа!" : "💥 Вы проиграли!"}</strong></p>
-    <p>⏱ Время: ${timeElapsed} сек</p>
-    <p>🏆 Очков: ${points}</p>
-    ${achievementText}
     <button onclick="startGame(currentLevel)">🔄 Заново</button>
     ${won && currentLevel !== 'hard' ? `<button onclick="startGame(nextLevel())">➡️ Следующий уровень</button>` : ""}
   `;
@@ -203,62 +175,6 @@ function endGame(won) {
     document.getElementById("game").after(resultBox);
   }
 
-  playSound(won ? "win" : "lose");
-
-  sendResultToBot(won, points, timeElapsed, checkAchievements(won, timeElapsed));
+  sendResultToBot(won);
 }
-
-function playSound(type) {
-  const sounds = {
-    click: new Audio("sounds/click.mp3"),
-    win: new Audio("sounds/win.mp3"),
-    lose: new Audio("sounds/lose.mp3"),
-  };
-  if (sounds[type]) {
-    sounds[type].play();
-  }
-}
-
-function sendResultToBot(won, points, time, achievements) {
-  if (typeof Telegram !== "undefined" && Telegram.WebApp) {
-    Telegram.WebApp.sendData(
-      JSON.stringify({
-        action: "game_result",
-        result: won ? "win" : "lose",
-        level: currentLevel,
-        points: points,
-        time: time,
-        achievements: achievements,
-      })
-    );
-  }
-}
-
-function checkAchievements(won, time) {
-  let achievements = [];
-
-  // Первые 10 игр
-  let gamesPlayed = localStorage.getItem("gamesPlayed") || 0;
-  gamesPlayed++;
-  localStorage.setItem("gamesPlayed", gamesPlayed);
-  if (gamesPlayed === 10) {
-    achievements.push("Вы сыграли 10 игр!");
-  }
-
-  // Пройден уровень Hard
-  if (currentLevel === "hard" && won) {
-    achievements.push("Пройден уровень HARD!");
-  }
-
-  // Рекордное время
-  const key = `best_time_${currentLevel}`;
-  const bestTime = localStorage.getItem(key) || Infinity;
-  if (won && time < bestTime) {
-    localStorage.setItem(key, time);
-    achievements.push(`Новое рекордное время на уровне ${currentLevel.toUpperCase()} — ${time} сек`);
-  }
-
-  return achievements;
-}
-
 window.onload = () => startGame();

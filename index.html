@@ -4,76 +4,95 @@
   <meta charset="UTF-8" />
   <title>Сапёр</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-      background: #f5f5f5;
-      text-align: center;
-    }
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 10px;
+    background: #f5f5f5;
+    text-align: center;
+  }
 
-    table {
-      border-collapse: collapse;
-      margin: 10px auto;
-      max-width: 100%;
-    }
+  table {
+    border-collapse: collapse;
+    margin: auto;
+  }
 
-    td {
-      width: calc(90vw / 16);
-      height: calc(90vw / 16);
-      min-width: 30px;
-      min-height: 30px;
-      border: 1px solid #aaa;
-      text-align: center;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 16px;
-      transition: transform 0.2s ease;
-    }
+  td {
+    width: calc(90vw / 16);
+    height: calc(90vw / 16);
+    min-width: 30px;
+    min-height: 30px;
+    border: 1px solid #aaa;
+    text-align: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
-    td.reveal {
-      animation: pop 0.2s ease-in-out;
-    }
+  .mine-cell {
+    background-color: red !important;
+    color: white;
+  }
 
-    @keyframes pop {
-      0% { transform: scale(1); opacity: 0.7; }
-      100% { transform: scale(1.1); opacity: 1; }
-    }
+  .safe-cell {
+    background-color: #ccffcc !important;
+  }
 
-    button {
-      margin: 5px;
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 5px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-    }
+  .empty-cell {
+    background-color: #eee !important;
+  }
 
-    button:hover {
-      background-color: #45a049;
-    }
+  .explode {
+    animation: explosion 0.4s ease-out forwards;
+  }
 
-    #level-buttons button.active {
-      background-color: #2196F3;
+  @keyframes explosion {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 rgba(255, 0, 0, 0);
     }
+    50% {
+      transform: scale(1.2);
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 rgba(255, 0, 0, 0);
+    }
+  }
 
-    #timer {
-      font-size: 18px;
-      margin: 10px auto;
-      font-weight: bold;
-    }
+  button {
+    margin: 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+  }
 
-    #result-box {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 300px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-  </style>
+  button:hover {
+    background-color: #45a049;
+  }
+
+  #level-buttons button.active {
+    background-color: #2196F3;
+  }
+
+  #result-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #fff;
+  }
+</style>
 </head>
 <body>
 
