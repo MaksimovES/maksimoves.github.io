@@ -260,3 +260,5 @@ function checkAchievements(won, time) {
 
   return achievements;
 }
+
+window.onload = () => startGame();
